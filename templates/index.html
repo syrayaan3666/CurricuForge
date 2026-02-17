@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>CurricuForge</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+    <div class="page">
+
+        <div class="card">
+
+            <h1>CurricuForge AI</h1>
+            <p class="tagline">Multi-Agent Curriculum Intelligence Engine</p>
+
+            <div class="inputs">
+                <select id="mode">
+                    <option value="semester" selected>Semester Planner</option>
+                    <option value="personal">Personal Planner</option>
+                </select>
+
+
+                <select id="skill">
+                    <option selected>Artificial Intelligence</option>
+                    <option>Data Science</option>
+                    <option>Cybersecurity</option>
+                    <option>Software Engineering</option>
+                </select>
+
+                <select id="level">
+                    <option>Bachelors</option>
+                    <option selected>Masters</option>
+                </select>
+
+                <select id="semesters">
+                    <option>4</option>
+                    <option selected>6</option>
+                    <option>8</option>
+                </select>
+
+                <select id="hours">
+                    <option>15</option>
+                    <option selected>20</option>
+                    <option>25</option>
+                </select>
+
+                <select id="focus">
+                    <option selected>Research</option>
+                    <option>Industry</option>
+                    <option>Startup</option>
+                </select>
+
+            </div>
+
+            <button class="generate-btn" onclick="generate()">
+                Generate Curriculum
+            </button>
+            <div class="agent-timeline">
+                <div id="planner" class="agent-step">Planner</div>
+                <div id="generator" class="agent-step">Generator</div>
+                <div id="validator" class="agent-step">Validator</div>
+            </div>
+
+
+
+        </div>
+
+        <div id="result"></div>
+
+    </div>
+
+    <script src="/static/app.js"></script>
+
+</body>
+
+</html>
