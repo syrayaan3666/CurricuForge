@@ -5,34 +5,31 @@ from agents.validator_agent import validator_agent
 from agents.formatter_agent import formatter_agent
 
 
+
 async def run_agent_pipeline(data: dict):
 
-    pipeline_state = {
-        "user_inputs": data
-    }
+    planner_type = data.get("plannerType", "semester")
 
-    # STEP 1 — PERSONAL PROFILE
-    learner_profile = await personal_planner_agent(data)
-    pipeline_state["learner_profile"] = learner_profile
+    # ================= PERSONAL PLANNER =================
+    if planner_type == "personal":
 
-    # STEP 2 — SEMESTER PLANNER
-    plan_output = await planner_agent({
-        **data,
-        "learner_profile": learner_profile
-    })
-    pipeline_state["plan_output"] = plan_output
+        learner_profile = await personal_planner_agent(data)
 
-    # STEP 3 — GENERATOR
-    curriculum = await generator_agent(plan_output)
-    pipeline_state["curriculum"] = curriculum
+        curriculum = await generator_agent({
+            "learner_profile": learner_profile
+        })
 
-    # STEP 4 — VALIDATOR
+    # ================= SEMESTER PLANNER =================
+    else:
+
+        plan = await planner_agent(data)
+
+        curriculum = await generator_agent(plan)
+
+    # ================= VALIDATION =================
     validation = await validator_agent(curriculum)
-    pipeline_state["validation"] = validation
 
-    # STEP 5 — FORMATTER
-    final_output = await formatter_agent({
-        **pipeline_state
-    })
+    # ✅ CORRECT CALL — TWO ARGUMENTS
+    final_output = await formatter_agent(curriculum, validation)
 
     return final_output

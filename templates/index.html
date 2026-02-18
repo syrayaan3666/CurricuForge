@@ -4,11 +4,14 @@
 <head>
     <title>CurricuForge</title>
     <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" href="data:,">
+
 </head>
 
 <body>
 
     <div class="page">
+
 
         <div class="card">
 
@@ -16,60 +19,120 @@
             <p class="tagline">Multi-Agent Curriculum Intelligence Engine</p>
 
             <div class="inputs">
-                <select id="mode">
-                    <option value="semester" selected>Semester Planner</option>
+
+                <!-- Planner Type -->
+                <select id="plannerType" onchange="switchPlanner()">
+                    <option value="" disabled selected>Select Planner Type</option>
+                    <option value="semester">Semester Planner</option>
                     <option value="personal">Personal Planner</option>
                 </select>
 
+                <!-- ================= SEMESTER PLANNER ================= -->
+                <div id="semesterForm" class="planner-section">
 
-                <select id="skill">
-                    <option selected>Artificial Intelligence</option>
-                    <option>Data Science</option>
-                    <option>Cybersecurity</option>
-                    <option>Software Engineering</option>
-                </select>
+                    <select id="skill">
+                        <option value="" disabled selected>Select Skill Domain</option>
+                        <option>Artificial Intelligence</option>
+                        <option>Data Science</option>
+                        <option>Cybersecurity</option>
+                        <option>Software Engineering</option>
+                    </select>
 
-                <select id="level">
-                    <option>Bachelors</option>
-                    <option selected>Masters</option>
-                </select>
+                    <select id="level">
+                        <option value="" disabled selected>Select Academic Level</option>
+                        <option>Bachelors</option>
+                        <option>Masters</option>
+                    </select>
 
-                <select id="semesters">
-                    <option>4</option>
-                    <option selected>6</option>
-                    <option>8</option>
-                </select>
+                    <select id="semesters">
+                        <option value="" disabled selected>Select Program Duration (Semesters)</option>
+                        <option>4</option>
+                        <option>6</option>
+                        <option>8</option>
+                    </select>
 
-                <select id="hours">
-                    <option>15</option>
-                    <option selected>20</option>
-                    <option>25</option>
-                </select>
+                    <select id="hours">
+                        <option value="" disabled selected>Select Weekly Hours</option>
+                        <option>15</option>
+                        <option>20</option>
+                        <option>25</option>
+                    </select>
 
-                <select id="focus">
-                    <option selected>Research</option>
-                    <option>Industry</option>
-                    <option>Startup</option>
-                </select>
+                    <select id="focus">
+                        <option value="" disabled selected>Select Focus Area</option>
+                        <option>Research</option>
+                        <option>Industry</option>
+                        <option>Startup</option>
+                    </select>
+
+                </div>
+
+                <!-- ================= PERSONAL PLANNER ================= -->
+                <div id="personalForm" class="planner-section" style="display:none;">
+
+                    <select id="pace">
+                        <option value="" disabled selected>Select Learning Pace</option>
+                        <option>Fast</option>
+                        <option>Moderate</option>
+                        <option>Slow</option>
+                    </select>
+
+                    <select id="experience">
+                        <option value="" disabled selected>Select Experience Level</option>
+                        <option>Beginner</option>
+                        <option>Intermediate</option>
+                        <option>Advanced</option>
+                    </select>
+
+                    <select id="goal">
+                        <option value="" disabled selected>Select Goal Type</option>
+                        <option>Career Switch</option>
+                        <option>Research</option>
+                        <option>Skill Upgrade</option>
+                    </select>
+
+                </div>
 
             </div>
 
             <button class="generate-btn" onclick="generate()">
                 Generate Curriculum
             </button>
+
             <div class="agent-timeline">
                 <div id="planner" class="agent-step">Planner</div>
                 <div id="generator" class="agent-step">Generator</div>
                 <div id="validator" class="agent-step">Validator</div>
             </div>
 
-
-
         </div>
 
-        <div id="result"></div>
+        <div class="result-container">
+            <div id="result"></div>
+        </div>
+
+
 
     </div>
+
+    <script>
+
+        function switchPlanner() {
+
+            const type = document.getElementById("plannerType").value;
+            const semesterForm = document.getElementById("semesterForm");
+            const personalForm = document.getElementById("personalForm");
+
+            if (type === "personal") {
+                semesterForm.style.display = "none";
+                personalForm.style.display = "grid";
+            } else {
+                semesterForm.style.display = "grid";
+                personalForm.style.display = "none";
+            }
+        }
+
+    </script>
 
     <script src="/static/app.js"></script>
 
