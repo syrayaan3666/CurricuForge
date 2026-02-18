@@ -1,6 +1,3 @@
-from services.llm_client import call_llm
-
-
 def apply_adaptive_pacing(curriculum: dict, learner_profile: dict):
 
     if not learner_profile:
@@ -23,29 +20,30 @@ def apply_adaptive_pacing(curriculum: dict, learner_profile: dict):
 
 
 async def formatter_agent(curriculum: dict, validation: dict):
-
-    system_prompt = """
-    You are the Formatter Agent.
-
-    Merge curriculum + validation output.
-    Produce clean structured JSON.
-
-    If learner_profile exists, keep it in final output.
     """
-
-    payload = {
-        "curriculum": curriculum,
-        "validation": validation
-    }
-
-    formatted = await call_llm(system_prompt, payload)
-
+    Format and validate curriculum output.
+    Ensures correct structure for frontend rendering.
+    """
+    
+    # ===== MERGE CURRICULUM WITH VALIDATION =====
+    formatted = curriculum.copy()
+    
+    # Add validation info if present
+    if validation:
+        formatted["validation_status"] = validation.get("status", "unknown")
+        # Validator returns `issues` and `suggestions` — preserve both
+        formatted["validation_issues"] = validation.get("issues", [])
+        formatted["validation_suggestions"] = validation.get("suggestions", [])
+        # optional structural warnings
+        if "metadata_warnings" in validation:
+            formatted["validation_metadata_warnings"] = validation.get("metadata_warnings", [])
+    
     # ===== 🧠 Adaptive Pacing Hook =====
     learner_profile = formatted.get("learner_profile")
-
+    
     formatted = apply_adaptive_pacing(
         formatted,
         learner_profile
     )
-
+    
     return formatted

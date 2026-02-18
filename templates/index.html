@@ -5,6 +5,7 @@
     <title>CurricuForge</title>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="icon" href="data:,">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 </head>
 
@@ -65,16 +66,30 @@
                         <option>Startup</option>
                     </select>
 
+                    <label style="grid-column: 1 / -1; display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="includeCapstone" checked>
+                        <span>Include Capstone Project in Final Semester</span>
+                    </label>
+
                 </div>
 
                 <!-- ================= PERSONAL PLANNER ================= -->
                 <div id="personalForm" class="planner-section" style="display:none;">
 
-                    <select id="pace">
-                        <option value="" disabled selected>Select Learning Pace</option>
-                        <option>Fast</option>
-                        <option>Moderate</option>
-                        <option>Slow</option>
+                    <select id="studyDomain">
+                        <option value="" disabled selected>Select Study Domain</option>
+                        <option>AI</option>
+                        <option>Data Science</option>
+                        <option>Cybersecurity</option>
+                        <option>Software Engineering</option>
+                    </select>
+
+                    <select id="careerPath">
+                        <option value="" disabled selected>Select Career Path</option>
+                        <option>Job Ready</option>
+                        <option>Research</option>
+                        <option>Startup</option>
+                        <option>Freelance</option>
                     </select>
 
                     <select id="experience">
@@ -84,11 +99,27 @@
                         <option>Advanced</option>
                     </select>
 
-                    <select id="goal">
-                        <option value="" disabled selected>Select Goal Type</option>
-                        <option>Career Switch</option>
-                        <option>Research</option>
-                        <option>Skill Upgrade</option>
+                    <select id="pace">
+                        <option value="" disabled selected>Select Learning Pace</option>
+                        <option>Fast</option>
+                        <option>Moderate</option>
+                        <option>Slow</option>
+                    </select>
+
+                    <select id="weeklyHours">
+                        <option value="" disabled selected>Select Weekly Hours</option>
+                        <option>10</option>
+                        <option>15</option>
+                        <option>20</option>
+                        <option>25</option>
+                    </select>
+
+                    <select id="duration">
+                        <option value="" disabled selected>Select Duration</option>
+                        <option>3 Months</option>
+                        <option>6 Months</option>
+                        <option>9 Months</option>
+                        <option>12 Months</option>
                     </select>
 
                 </div>
@@ -109,6 +140,19 @@
 
         <div class="result-container">
             <div id="result"></div>
+        </div>
+
+        <!-- Refinement UI (hidden until a plan is generated) -->
+        <div id="refineContainer" style="display:none; width:700px;">
+            <div class="card" style="padding:16px;">
+                <h3 style="margin:0 0 8px 0;">Refine Curriculum</h3>
+                <textarea id="refineText"
+                    placeholder="e.g. 'Make this more industry-focused and add one capstone project'"
+                    style="width:100%; height:80px; padding:10px; border-radius:8px; background:#020617; color:white; border:1px solid rgba(148,163,184,0.15);"></textarea>
+                <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+                    <button id="refineBtn" class="generate-btn" onclick="refinePlan()">Refine Curriculum</button>
+                </div>
+            </div>
         </div>
 
 
