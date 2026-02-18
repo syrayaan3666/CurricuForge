@@ -23,8 +23,10 @@ Return format:
   "difficulty_progression": "",
   "courses_per_semester": 0,
   "focus_tags": [],
-  "include_capstone": true
+  "include_capstone": true,
+  "semesters": 0
 }
+
 """
 
 

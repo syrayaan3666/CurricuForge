@@ -13,6 +13,11 @@ IMPORTANT RULES:
 - Generate courses, topics, and learning outcomes.
 - Output STRICT JSON only.
 - Do not include explanations.
+- You MUST generate EXACTLY {semesters} semesters.
+- The output MUST contain a "semesters" array.
+- The length of the array MUST equal the input semesters count.
+- NEVER reduce or merge semesters.
+- NEVER summarize.
 
 Return format:
 

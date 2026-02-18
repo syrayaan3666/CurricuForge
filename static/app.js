@@ -118,6 +118,14 @@ function renderCurriculum(data){
 
     console.log("API RESPONSE:", data); // 👈 debug
 
+     html += `
+        <div class="download-bar">
+            <button class="download-btn" onclick='downloadCurriculum(${JSON.stringify(data)})'>
+                ⬇ Download
+            </button>
+        </div>
+    `;
+
     // handle formatter_agent output structure
     const curriculum = data.curriculum || data;
 
@@ -153,4 +161,18 @@ function renderCurriculum(data){
 
     document.getElementById("result").innerHTML = html;
 }
+
+function downloadCurriculum(data){
+
+    const file = new Blob(
+        [JSON.stringify(data, null, 2)],
+        {type: "application/json"}
+    );
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(file);
+    a.download = "curriculum.json";
+    a.click();
+}
+
 
