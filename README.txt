@@ -1,175 +1,134 @@
 📖 CurricuForge AI — Generative Curriculum Design System
 
-CurricuForge AI is a **semi-agentic Generative AI platform** that designs structured academic curricula using multi-agent orchestration.
-Built for hackathon environments, the system demonstrates how AI can automate curriculum planning, generate industry-aligned courses, and support adaptive learning design.
+CurricuForge AI is a multi-agent, generative platform that turns simple learner or program inputs into structured, actionable curricula. It demonstrates robust LLM orchestration, resilient provider fallbacks, and a compact front-end for interactive refinement.
 
 ---
 
 ## 🧠 Overview
 
-CurricuForge transforms educational requirements into structured semester plans through an AI-driven workflow.
-
-The platform simulates an **Agentic Curriculum Designer** using multiple AI agents that collaborate to:
-
-* Analyze requirements
-* Plan curriculum structure
-* Generate course content
-* Validate academic alignment
-* Format final output for delivery
-
-The goal is to show how AI can augment educators with scalable curriculum intelligence.
+CurricuForge converts user inputs (semester program or personal learning goals) into strict, structured JSON curriculum artifacts. Small, focused agents plan, generate, validate, and format the output. A post-generation refinement loop allows users to iteratively improve plans using plain English instructions.
 
 ---
 
 ## ✨ Key Features
 
-* Multi-Agent Architecture (Planner → Generator → Validator → Formatter)
-* Semi-Agentic pipeline with upgrade path to feedback loops
-* Curriculum generation in structured JSON format
-* Hackathon-ready futuristic UI
-* Persona Planner + Semester Planner support
-* Fallback AI provider (Gemini → HuggingFace)
-* Modular backend using FastAPI
+- Multi-agent pipeline: Planner → Generator → Validator → Formatter
+- Two planner modes: Semester (university-style) and Personal (time-based roadmap)
+- Post-generation refinement with `agents/refine_agent.py` and `/refine-plan` endpoint
+- Robust LLM routing: Gemini primary, Groq fallback with circuit-breaker when Gemini quota is exhausted
+- Resilient JSON parsing: brace-aware extractor, truncation detection, and one-time repair retry
+- Prompt tuning and larger token budget for Groq to avoid truncation of long curricula
+- Frontend: internal-scroll generation container, in-page refinement UI, JSON & PDF downloads (jsPDF)
+- FastAPI backend for quick local demos
 
 ---
 
-## 🏗️ Architecture
+## Architecture (high level)
 
-### Agent Pipeline Flow
+User Input → Planner Agent (structure) → Generator Agent (content) → Validator Agent (quality) → Formatter Agent (UI JSON)
 
-```
-User Input
-    ↓
-Profile Agent (Learner Persona Builder)
-    ↓
-Planner Agent (Curriculum Structure)
-    ↓
-Generator Agent (Courses + Topics + Outcomes)
-    ↓
-Validator Agent (Quality + Alignment Check)
-    ↓
-Formatter Agent (Final UI JSON)
-```
-
-This sequential orchestration makes it easy to extend into a fully agentic feedback loop later.
+Refinement: the refine agent accepts a current plan + an instruction, then returns a refined plan which is validated and formatted before being sent back to the frontend.
 
 ---
 
-## 🛠️ Tech Stack
+## Important Implementation Details
 
-### Backend
+- `services/llm_client.py`
+  - Central LLM router. Tries Gemini first (via Google GenAI). On quota/exhaustion it sets a circuit-breaker and falls back to Groq (OpenAI-compatible REST).
+  - Improved JSON extraction: handles markdown fences, tracks strings/escapes, performs brace/bracket balancing, and can auto-close truncated responses.
+  - Adds `detect_truncation()` and a one-time repair retry that asks the LLM to correct malformed JSON.
+  - Groq calls use an increased `max_tokens` value to reduce truncation risk.
 
-* Python
-* FastAPI
-* Async Orchestrator
-* Multi-Agent Design Pattern
+- `agents/generator_agent.py`
+  - Dual prompts: `SEMESTER_GENERATOR_PROMPT` and `PERSONAL_GENERATOR_PROMPT` (time-based roadmap).
+  - Semester prompt now requests `difficulty`, `skills`, `topics`, and `outcome_project` per course and honors `include_capstone`.
+  - Personal prompt produces `roadmap` → phases → milestones → topics (with estimated_hours where appropriate).
+  - Adds conciseness guidance to keep outputs within token limits and preserves `learner_profile` in the generator output.
 
-### AI Services
+- `agents/refine_agent.py` (new)
+  - Accepts `{ instruction, current_plan }` and returns a modified curriculum JSON. The endpoint `/refine-plan` wires this into validation + formatting so the UI receives a production-ready plan.
 
-* Gemini API
-* HuggingFace (fallback inference)
+- `agents/validator_agent.py` & `agents/formatter_agent.py`
+  - Validator recognizes both `semesters` and `roadmap` formats and verifies new semester fields and capstone logic.
+  - Formatter merges validation metadata (`issues`, `suggestions`, `metadata_warnings`) into the final object and applies optional adaptive pacing.
 
-### Frontend
-
-* HTML
-* CSS (Glassmorphism AI Dashboard)
-* Vanilla JavaScript
-
----
-
-## 📁 Project Structure
-
-```
-curricuforge/
-│
-├── agents/          # AI agent logic (planner, generator, validator, formatter, profile)
-├── orchestrator/    # Agent pipeline workflow
-├── services/        # AI client integrations (Gemini / HuggingFace)
-├── models/          # Data schemas
-├── templates/       # HTML UI
-├── static/          # CSS + JS
-├── main.py          # FastAPI entry point
-```
+- Frontend (`templates/index.html`, `static/app.js`, `static/style.css`)
+  - New in-page refinement UI (bottom of right panel) that posts to `/refine-plan`.
+  - Generation container scrolls internally so the refinement box remains visible.
+  - Download bar supports JSON & PDF export; PDF generation uses jsPDF (CDN included in template).
+  - Layout and styling tweaks: difficulty badges, capstone indicator, compact form spacing.
 
 ---
 
-API Endpoint:
+## API Endpoints
 
-### POST `/generate`
-
-Input Payload:
+- `POST /generate` — run the pipeline and return a formatted curriculum JSON.
+  - Example semester payload:
 
 ```json
 {
-  "mode": "semester",
+  "planner_type": "semester",
   "skill": "Artificial Intelligence",
   "level": "Masters",
-  "semesters": 4,
-  "weekly_hours": 20,
-  "industry_focus": "Research"
+  "semesters": 6,
+  "weekly_hours": 15,
+  "focus": "Industry",
+  "include_capstone": true
 }
 ```
 
-Response:
+  - Example personal payload:
 
-Structured curriculum JSON containing semesters, courses, topics, and learning outcomes.
-
----
-
-UI Integration Contract:
-
-The frontend communicates with the backend using fixed element IDs:
-
-```
-mode
-skill
-level
-semesters
-hours
-focus
-profile
-planner
-generator
-validator
-result
+```json
+{
+  "planner_type": "personal",
+  "study_domain": "AI Research",
+  "career_path": "Researcher",
+  "experience": "intermediate",
+  "pace": "moderate",
+  "weekly_hours": 20,
+  "duration": "9 Months"
+}
 ```
 
-These IDs must remain unchanged because `app.js` depends on them.
+- `POST /refine-plan` — accepts `{ instruction: string, current_plan: object }` and returns the refined, validated, formatted curriculum JSON.
 
 ---
 
-AI Provider Strategy:
+## Setup & Run
 
-CurricuForge uses a resilient AI architecture:
+1. Create and activate a Python virtualenv.
+2. Install dependencies listed in `requirements.txt`.
+3. Provide API keys via environment variables or a `.env` file:
 
-1. Try Gemini API
-2. If quota/service fails → fallback to HuggingFace
-3. Return structured JSON regardless of provider
+```
+GEMINI_API_KEY=your_gemini_key
+GROQ_API_KEY=your_groq_key
+```
 
-This ensures stable demos during hackathons.
+4. Start the server:
 
----
+```bash
+uvicorn main:app --reload
+```
 
-Future Improvements:
-
-* Full agentic feedback loop
-* Real learner analytics ingestion
-* Adaptive learning paths
-* Admin dashboard
-* LMS integration
-
----
-
-Author Notes:
-
-This project was built as a hackathon prototype to demonstrate how AI can:
-
-* Automate curriculum planning
-* Personalize education at scale
-* Support educators with intelligent tooling
-
-The current implementation is **semi-agentic**, but the architecture is designed to evolve into a fully autonomous curriculum design system.
+5. Open `http://127.0.0.1:8000` and use the UI.
 
 ---
 
-**CurricuForge AI — Designing the future of learning with intelligent agents.**
+## Tips & Troubleshooting
+
+- If you see `ModuleNotFoundError: dotenv` install `python-dotenv`.
+- Gemini quota errors (429 / RESOURCE_EXHAUSTED) will automatically switch the app to Groq and set a circuit-breaker so subsequent requests use Groq-only.
+- If Groq output looks truncated: reduce prompt verbosity in `agents/generator_agent.py` and/or increase `max_tokens` in `services/llm_client.py`.
+- To inspect full LLM responses, adjust debug `print()` preview lengths in `services/llm_client.py` (careful with very large logs).
+
+---
+
+## Notes
+
+- This project is a demo/prototype intended for experimentation and demonstration. Consider adding stricter JSON schema validation (e.g., `jsonschema`) before using generated curricula in production systems.
+
+---
+
+CurricuForge AI — resilient LLM orchestration for practical curriculum design.

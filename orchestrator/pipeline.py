@@ -43,4 +43,22 @@ async def run_agent_pipeline(data: dict):
     # ✅ CORRECT CALL — TWO ARGUMENTS
     final_output = await formatter_agent(curriculum, validation)
 
+    # DEBUG: Log what's being returned to frontend
+    print("\n" + "="*60)
+    print("PIPELINE FINAL OUTPUT DEBUG")
+    print("="*60)
+    if "semesters" in final_output:
+        print(f"Has semesters: {len(final_output['semesters'])}")
+        if final_output["semesters"]:
+            first_sem = final_output["semesters"][0]
+            print(f"First semester has {len(first_sem.get('courses', []))} courses")
+            if "courses" in first_sem and first_sem["courses"]:
+                first_course = first_sem["courses"][0]
+                print(f"First course keys: {list(first_course.keys())}")
+                print(f"First course has skills: {'skills' in first_course}")
+                print(f"First course has topics: {'topics' in first_course}")
+                print(f"First course has outcome_project: {'outcome_project' in first_course}")
+                print(f"First course sample: {first_course}")
+    print("="*60 + "\n")
+
     return final_output

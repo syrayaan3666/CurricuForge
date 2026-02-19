@@ -125,7 +125,36 @@ function renderCurriculum(data){
     let html = "";    
     // Store data globally FIRST for download buttons
     window.currentCurriculumData = data;
-    console.log("Stored curriculum data:", data);
+    
+    // === DETAILED DEBUG LOGGING ===
+    console.log("=== RENDER CURRICULUM DEBUG ===");
+    console.log("Data passed to renderCurriculum:", data);
+    console.log("Stored in window.currentCurriculumData:", window.currentCurriculumData);
+    
+    if (data.semesters && data.semesters.length > 0) {
+        console.log(`NUMBER OF SEMESTERS: ${data.semesters.length}`);
+        
+        data.semesters.forEach((sem, semIdx) => {
+            console.log(`\n--- SEMESTER ${sem.semester} ---`);
+            if (sem.courses && sem.courses.length > 0) {
+                console.log(`Number of courses: ${sem.courses.length}`);
+                
+                sem.courses.forEach((course, courseIdx) => {
+                    console.log(`\nCourse ${courseIdx + 1}: ${course.title}`);
+                    console.log(`  Has title: ${!!course.title}`);
+                    console.log(`  Has difficulty: ${!!course.difficulty} (value: ${course.difficulty})`);
+                    console.log(`  Has skills: ${!!course.skills} (count: ${course.skills ? course.skills.length : 0})`);
+                    console.log(`  Has topics: ${!!course.topics} (count: ${course.topics ? course.topics.length : 0})`);
+                    console.log(`  Has outcome_project: ${!!course.outcome_project}`);
+                    console.log(`  Full course object:`, course);
+                });
+            } else {
+                console.log(`ERROR: Semester has no courses!`);
+            }
+        });
+    }
+    
+    console.log("=== END DEBUG ===\n");
     // =====================================================
     // � PERSONAL ROADMAP MODE (NEW)
     // =====================================================
@@ -335,122 +364,75 @@ function downloadJSON(data){
     a.click();
 }
 
-function downloadPDF(data){
-    // Use global data if not passed
-    if(!data) {
-        data = window.currentCurriculumData;
+function downloadPDF(data) {
+    // data is passed directly from button click — guaranteed to be the exact rendered data
+    console.log("=== DOWNLOAD PDF (Direct Data Pass) ===");
+    console.log("Received data object:", data);
+    console.log("Data has semesters:", !!data.semesters);
+    console.log("Number of semesters:", data.semesters ? data.semesters.length : 0);
+    
+    if (data.semesters && data.semesters.length > 0) {
+        console.log("First semester courses:", data.semesters[0].courses.length);
+        if (data.semesters[0].courses.length > 0) {
+            console.log("First course:", JSON.stringify(data.semesters[0].courses[0], null, 2));
+        }
     }
+    console.log("=== END DEBUG ===\n");
     
-    console.log("downloadPDF called with data:", data);
-    
-    if(!data) {
+    if (!data) {
         alert("No curriculum data available. Please generate a curriculum first.");
         return;
     }
     
-    // Check if jsPDF is available
-    if(!window.jspdf || !window.jspdf.jsPDF){
-        alert("PDF library not loaded. Please refresh the page and try again.");
-        return;
-    }
-
-    try {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        console.log("PDF generation started");
-        let yPosition = 10;
-        const pageHeight = doc.internal.pageSize.getHeight();
-        const margin = 10;
-        const maxWidth = doc.internal.pageSize.getWidth() - 2 * margin;
-
-    // Title
-    doc.setFontSize(16);
-    doc.text(data.program_title || "Curriculum", margin, yPosition);
-    yPosition += 10;
-
-    // Summary
-    if(data.summary){
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        const summaryLines = doc.splitTextToSize(data.summary, maxWidth);
-        doc.text(summaryLines, margin, yPosition);
-        yPosition += summaryLines.length * 5 + 5;
-    }
-
-    // Metadata
-    if(data.total_weeks || data.weekly_hours){
-        doc.setFontSize(9);
-        doc.setTextColor(0);
-        if(data.total_weeks) doc.text(`Duration: ${data.total_weeks} weeks`, margin, yPosition);
-        yPosition += 5;
-        if(data.weekly_hours) doc.text(`Weekly Hours: ${data.weekly_hours}`, margin, yPosition);
-        yPosition += 8;
-    }
-
-    // Roadmap or Semesters
-    if(data.roadmap){
-        data.roadmap.forEach(phase => {
-            if(yPosition > pageHeight - 20) {
-                doc.addPage();
-                yPosition = 10;
-            }
-            doc.setFontSize(12);
-            doc.setTextColor(0);
-            doc.text(phase.phase, margin, yPosition);
-            yPosition += 7;
-
-            phase.milestones.forEach(milestone => {
-                if(yPosition > pageHeight - 20) {
-                    doc.addPage();
-                    yPosition = 10;
-                }
-                doc.setFontSize(11);
-                doc.setTextColor(50);
-                doc.text(`• ${milestone.title}`, margin + 2, yPosition);
-                yPosition += 5;
-
-                if(milestone.skills){
-                    doc.setFontSize(9);
-                    doc.setTextColor(100);
-                    doc.text("Skills: " + milestone.skills.join(", "), margin + 4, yPosition);
-                    yPosition += 4;
-                }
-
-                yPosition += 2;
-            });
-            yPosition += 3;
-        });
-    }
-    else if(data.semesters){
-        data.semesters.forEach(sem => {
-            if(yPosition > pageHeight - 20) {
-                doc.addPage();
-                yPosition = 10;
-            }
-            doc.setFontSize(12);
-            doc.setTextColor(0);
-            doc.text(`Semester ${sem.semester}`, margin, yPosition);
-            yPosition += 7;
-
-            sem.courses.forEach(course => {
-                if(yPosition > pageHeight - 20) {
-                    doc.addPage();
-                    yPosition = 10;
-                }
-                doc.setFontSize(10);
-                doc.text(`• ${course.title}`, margin + 2, yPosition);
-                yPosition += 5;
-            });
-            yPosition += 3;
-        });
-    }
-
-        doc.save("curriculum.pdf");
+    // Show loading state
+    const btn = event.target;
+    const originalText = btn.textContent;
+    btn.textContent = "Generating PDF...";
+    btn.disabled = true;
+    
+    // Log what we're sending to backend
+    const payloadToSend = { curriculum: data };
+    console.log("Sending to /export-pdf:", payloadToSend);
+    
+    // POST to backend PDF generator
+    fetch("/export-pdf", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payloadToSend)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.blob();
+    })
+    .then(blob => {
+        // Create a download link and trigger download
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "curriculum.pdf";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
         console.log("PDF downloaded successfully");
-    } catch(error) {
-        console.error("PDF generation error:", error);
+        
+        // Restore button
+        btn.textContent = originalText;
+        btn.disabled = false;
+    })
+    .catch(error => {
+        console.error("PDF download error:", error);
         alert("Error generating PDF: " + error.message);
-    }
+        
+        // Restore button
+        btn.textContent = originalText;
+        btn.disabled = false;
+    });
 }
 
 function createDownloadBar(data){
@@ -462,12 +444,12 @@ function createDownloadBar(data){
     const jsonBtn = document.createElement("button");
     jsonBtn.className = "download-btn download-json";
     jsonBtn.textContent = "📥 JSON";
-    jsonBtn.onclick = () => downloadJSON(window.currentCurriculumData);
+    jsonBtn.onclick = () => downloadJSON(data);  // Pass data directly
     
     const pdfBtn = document.createElement("button");
     pdfBtn.className = "download-btn download-pdf";
     pdfBtn.textContent = "📄 PDF";
-    pdfBtn.onclick = () => downloadPDF(window.currentCurriculumData);
+    pdfBtn.onclick = () => downloadPDF(data);  // Pass data directly
     
     bar.appendChild(jsonBtn);
     bar.appendChild(pdfBtn);
