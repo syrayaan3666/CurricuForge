@@ -140,17 +140,14 @@
 
         <div class="result-container">
             <div id="result"></div>
-        </div>
 
-        <!-- Refinement UI (hidden until a plan is generated) -->
-        <div id="refineContainer" style="display:none; width:700px;">
-            <div class="card" style="padding:16px;">
-                <h3 style="margin:0 0 8px 0;">Refine Curriculum</h3>
+            <!-- Refinement UI (hidden until a plan is generated) -->
+            <div id="refineContainer" style="display:none;">
+                <h4>Refine Curriculum</h4>
                 <textarea id="refineText"
-                    placeholder="e.g. 'Make this more industry-focused and add one capstone project'"
-                    style="width:100%; height:80px; padding:10px; border-radius:8px; background:#020617; color:white; border:1px solid rgba(148,163,184,0.15);"></textarea>
-                <div style="display:flex; justify-content:flex-end; margin-top:8px;">
-                    <button id="refineBtn" class="generate-btn" onclick="refinePlan()">Refine Curriculum</button>
+                    placeholder="e.g. 'Make this more industry-focused and add one capstone project'"></textarea>
+                <div style="display:flex; justify-content:flex-end;">
+                    <button id="refineBtn" class="generate-btn" onclick="refinePlan()">Refine</button>
                 </div>
             </div>
         </div>

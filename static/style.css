@@ -1,9 +1,13 @@
+html, body{
+    height:100%;
+    overflow:hidden;
+}
+
 body{
     margin:0;
     font-family:Segoe UI, sans-serif;
     background: radial-gradient(circle at top,#020617,#000000);
     color:white;
-    overflow-x:hidden;
 }
 
 /* glow background */
@@ -32,25 +36,28 @@ body::after{
 }
 
 .page{
-    display:flex;
-    justify-content:center;
-    align-items:flex-start;
-    gap:40px;
-    margin-top:70px;
+    display:grid;
+    grid-template-columns:700px 1fr;
+    gap:100px;
+    padding:50px 40px 30px 40px;
+    height:100%;
+    overflow:hidden;
 }
 .card{
     width:700px;
-    padding:30px;
+    padding:24px;
     border-radius:18px;
     background:rgba(15,23,42,0.7);
     backdrop-filter:blur(18px);
     border:1px solid rgba(148,163,184,0.15);
     box-shadow:0 0 60px rgba(0,0,0,0.6);
+    height:100%;
+    overflow-y:auto;
 }
 
 h1{
-    font-size:40px;
-    margin:0;
+    font-size:36px;
+    margin:0 0 8px 0;
     background:linear-gradient(90deg,#3b82f6,#06b6d4,#22c55e);
     background-clip:text;
     -webkit-background-clip:text;
@@ -59,13 +66,13 @@ h1{
 
 .tagline{
     color:#94a3b8;
-    margin-bottom:25px;
+    margin-bottom:16px;
 }
 
 .inputs{
     display:flex;
     flex-direction:column;
-    gap:14px;
+    gap:10px;
 }
 
 .planner-section{
@@ -83,9 +90,9 @@ select{
 }
 
 .generate-btn{
-    margin-top:22px;
+    margin-top:14px;
     width:100%;
-    padding:16px;
+    padding:14px;
     border-radius:12px;
     border:none;
     font-size:16px;
@@ -102,7 +109,7 @@ select{
 }
 
 .agent-timeline{
-    margin-top:18px;
+    margin-top:14px;
     display:flex;
     justify-content:space-between;
     gap:10px;
@@ -133,27 +140,35 @@ select{
     width:100%;
 }
 
-/* ================= RESULT PANEL ================= */
-
 .result-container{
-    width:700px;
-    height:620px;
-    overflow-y:auto;
-    padding:20px;
+    display:flex;
+    flex-direction:column;
+    height:calc(100% - 80px);
+    overflow:hidden;
+    padding:12px;
     border-radius:18px;
     background:rgba(15,23,42,0.55);
     backdrop-filter:blur(18px);
     border:1px solid rgba(59,130,246,0.15);
     box-shadow:0 0 40px rgba(0,0,0,0.7);
+    gap:6px;
 }
 
+/* Generation results (top, scrollable internally) */
+#result{
+    flex:1;
+    overflow-y:auto;
+    overflow-x:hidden;
+    padding-right:4px;
+    min-height:0;
+}
 
 /* custom scrollbar (futuristic look) */
-.result-container::-webkit-scrollbar{
+#result::-webkit-scrollbar{
     width:6px;
 }
 
-.result-container::-webkit-scrollbar-thumb{
+#result::-webkit-scrollbar-thumb{
     background:#3b82f6;
     border-radius:10px;
 }
@@ -396,18 +411,55 @@ select{
     margin-left:6px;
 }
 
-/* result box fills right column */
-.result-container{
+/* Refinement container (bottom zone, fixed height) */
+#refineContainer{
+    flex-shrink:0;
+    border-top:1px solid rgba(59,130,246,0.2);
+    padding-top:6px;
+    padding-bottom:0;
+}
+
+#refineContainer h4{
+    margin:0 0 4px 0;
+    font-size:11px;
+    color:#94a3b8;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+}
+
+#refineText{
     width:100%;
-    margin-top:0;
+    height:45px;
+    padding:6px;
+    border-radius:6px;
+    background:#020617;
+    color:white;
+    border:1px solid rgba(148,163,184,0.15);
+    font-size:11px;
+    resize:none;
+    font-family:Segoe UI, sans-serif;
+}
+
+#refineText:focus{
+    outline:none;
+    border-color:rgba(59,130,246,0.4);
+    background:rgba(2,6,23,0.9);
+}
+
+#refineBtn{
+    padding:5px 10px;
+    font-size:11px;
+    margin-top:3px;
 }
 
 .download-bar{
     display:flex;
     justify-content:flex-end;
-    gap:10px;
-    margin-bottom:18px;
-    padding:12px 0;
+    gap:8px;
+    margin-bottom:8px;
+    padding:6px 0;
+    border-bottom:1px solid rgba(59,130,246,0.1);
+    padding-bottom:8px;
     border-bottom:1px solid rgba(59,130,246,0.1);
 }
 
