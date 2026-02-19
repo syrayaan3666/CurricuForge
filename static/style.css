@@ -1,6 +1,8 @@
+/* ensure consistent box sizing and allow scrolling on small screens */
+*, *::before, *::after{box-sizing:border-box}
 html, body{
     height:100%;
-    overflow:hidden;
+    overflow:hidden; /* desktop: prevent page scrolling, use internal scroll areas */
 }
 
 body{
@@ -37,21 +39,21 @@ body::after{
 
 .page{
     display:grid;
-    grid-template-columns:700px 1fr;
-    gap:100px;
-    padding:50px 40px 30px 40px;
-    height:100%;
-    overflow:hidden;
+    grid-template-columns:minmax(0,700px) 1fr;
+    gap:60px;
+    padding:40px;
+    height:100vh; /* ensure the grid fills viewport so internal panels can scroll */
 }
 .card{
-    width:700px;
+    width:100%;
+    max-width:700px;
     padding:24px;
     border-radius:18px;
     background:rgba(15,23,42,0.7);
     backdrop-filter:blur(18px);
     border:1px solid rgba(148,163,184,0.15);
     box-shadow:0 0 60px rgba(0,0,0,0.6);
-    height:100%;
+    max-height:calc(100vh - 120px);
     overflow-y:auto;
 }
 
@@ -398,6 +400,42 @@ select{
 }
 
 /* ================= TOPIC DETAILS ================= */
+
+/* Responsive adjustments */
+@media (max-width: 900px){
+    /* mobile: allow the page to scroll */
+    html, body{
+        overflow:auto;
+        height:auto;
+    }
+    .page{height:auto}
+    .page{
+        grid-template-columns:1fr;
+        gap:20px;
+        padding:20px;
+    }
+    .card{
+        max-width:100%;
+        max-height:none;
+        height:auto;
+    }
+    .result-container{
+        height:auto;
+        max-height:none;
+        overflow:visible;
+    }
+    .planner-section{
+        grid-template-columns:1fr;
+    }
+    .inputs{gap:8px}
+}
+
+@media (max-width: 480px){
+    h1{font-size:28px}
+    .page{padding:12px}
+    .generate-btn{padding:12px; font-size:15px}
+    body::before, body::after{width:300px; height:300px; filter:blur(90px)}
+}
 
 .topic-hours{
     color:#fbbf24;

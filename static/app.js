@@ -376,7 +376,7 @@ function downloadJSON(data){
     a.click();
 }
 
-function downloadPDF(data) {
+function downloadPDF(data, event) {
     // data is passed directly from button click — guaranteed to be the exact rendered data
     console.log("=== DOWNLOAD PDF (Direct Data Pass) ===");
     console.log("Received data object:", data);
@@ -397,10 +397,9 @@ function downloadPDF(data) {
     }
     
     // Show loading state
-    const btn = event.target;
-    const originalText = btn.textContent;
-    btn.textContent = "Generating PDF...";
-    btn.disabled = true;
+    const btn = event ? event.target : null;
+    const originalText = btn ? btn.textContent : "";
+    if(btn){ btn.textContent = "Generating PDF..."; btn.disabled = true; }
     
     // Log what we're sending to backend
     const payloadToSend = { curriculum: data };
@@ -434,16 +433,14 @@ function downloadPDF(data) {
         console.log("PDF downloaded successfully");
         
         // Restore button
-        btn.textContent = originalText;
-        btn.disabled = false;
+        if(btn){ btn.textContent = originalText; btn.disabled = false; }
     })
     .catch(error => {
         console.error("PDF download error:", error);
         alert("Error generating PDF: " + error.message);
         
         // Restore button
-        btn.textContent = originalText;
-        btn.disabled = false;
+        if(btn){ btn.textContent = originalText; btn.disabled = false; }
     });
 }
 
@@ -461,7 +458,7 @@ function createDownloadBar(data){
     const pdfBtn = document.createElement("button");
     pdfBtn.className = "download-btn download-pdf";
     pdfBtn.textContent = "📄 PDF";
-    pdfBtn.onclick = () => downloadPDF(data);  // Pass data directly
+    pdfBtn.onclick = (e) => downloadPDF(data, e);  // Pass data and event
     
     bar.appendChild(jsonBtn);
     bar.appendChild(pdfBtn);
