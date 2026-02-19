@@ -10,8 +10,6 @@ from services.pdf_generator import generate_pdf_from_curriculum
 from fastapi import HTTPException
 from io import BytesIO
 
-print("🔥 USING NEW PDF GENERATOR FILE")
-
 app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
