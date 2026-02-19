@@ -4,16 +4,15 @@ import requests
 import asyncio
 from dotenv import load_dotenv
 
-# Attempt to import the Google Generative AI client in a few ways to
-# be resilient across environments (package names vary). If it's not
+# Attempt to import the Google Generative AI client. If it's not
 # available, set `genai` to None so the code falls back to the Groq
 # provider instead of crashing at import time.
 genai = None
 try:
-    import google.generativeai as genai  # preferred package name
+    import google.genai as genai  # new package name (preferred)
 except Exception:
     try:
-        from google import genai  # older alias in some installs
+        import google.generativeai as genai  # fallback to old package
     except Exception:
         genai = None
 

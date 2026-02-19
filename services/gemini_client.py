@@ -5,10 +5,10 @@ from dotenv import load_dotenv
 # Import Google GenAI client robustly (package names vary across installs).
 genai = None
 try:
-    import google.generativeai as genai
+    import google.genai as genai  # new package name (preferred)
 except Exception:
     try:
-        from google import genai
+        import google.generativeai as genai  # fallback to old package
     except Exception:
         genai = None
 
