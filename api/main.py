@@ -18,6 +18,7 @@ from services.pdf_generator import generate_pdf_from_curriculum
 from services.logger import get_logger
 from fastapi import HTTPException
 from io import BytesIO
+from main import app
 
 app = FastAPI()
 

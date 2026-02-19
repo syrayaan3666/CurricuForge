@@ -1,12 +1,26 @@
 import os
 import json
 from dotenv import load_dotenv
-from google import genai
+
+# Import Google GenAI client robustly (package names vary across installs).
+genai = None
+try:
+    import google.generativeai as genai
+except Exception:
+    try:
+        from google import genai
+    except Exception:
+        genai = None
 
 load_dotenv()
 
-# Create Gemini client
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+# Create Gemini client if available
+client = None
+if genai is not None:
+    try:
+        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+    except Exception:
+        client = None
 
 
 def extract_json(text: str):
@@ -34,6 +48,9 @@ async def call_gemini(system_prompt: str, payload: dict):
     No explanations.
     No markdown.
     """
+
+    if client is None:
+        raise Exception("Gemini client not available in this environment")
 
     try:
         response = client.models.generate_content(

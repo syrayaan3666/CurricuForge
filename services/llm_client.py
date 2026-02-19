@@ -3,7 +3,19 @@ import json
 import requests
 import asyncio
 from dotenv import load_dotenv
-from google import genai
+
+# Attempt to import the Google Generative AI client in a few ways to
+# be resilient across environments (package names vary). If it's not
+# available, set `genai` to None so the code falls back to the Groq
+# provider instead of crashing at import time.
+genai = None
+try:
+    import google.generativeai as genai  # preferred package name
+except Exception:
+    try:
+        from google import genai  # older alias in some installs
+    except Exception:
+        genai = None
 
 load_dotenv()
 
@@ -18,7 +30,12 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 # Gemini client
-gemini_client = genai.Client(api_key=GEMINI_API_KEY)
+gemini_client = None
+if genai is not None:
+    try:
+        gemini_client = genai.Client(api_key=GEMINI_API_KEY)
+    except Exception:
+        gemini_client = None
 
 # ================= CIRCUIT BREAKER (Quota Fallback) =================
 # Once Gemini quota fails, skip Gemini for all subsequent requests
@@ -183,7 +200,7 @@ No markdown.
     # =================================================
     # 1️⃣ TRY GEMINI FIRST — SKIP IF QUOTA EXHAUSTED
     # =================================================
-    if not gemini_quota_exhausted:
+    if not gemini_quota_exhausted and gemini_client is not None:
         try:
             logger.info("Using Gemini provider: Gemini")
 
@@ -247,7 +264,7 @@ No markdown.
                 logger.warning("Gemini quota hit — switching to Groq-only mode...")
                 gemini_quota_exhausted = True
     else:
-        logger.info("Gemini quota exhausted — skipping to Groq")
+        logger.info("Gemini quota exhausted or unavailable — skipping to Groq")
 
     # =================================================
     # 2️⃣ FALLBACK → GROQ PROVIDER
