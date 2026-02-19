@@ -27,7 +27,9 @@ def safe(text):
 
 
 def generate_pdf_from_curriculum(curriculum: dict) -> bytes:
-    print("PDF BUILDER V2 EXECUTED")
+    from services.logger import get_logger
+    logger = get_logger("pdf_generator")
+    logger.debug("PDF BUILDER V2 EXECUTED")
 
     buffer = BytesIO()
 
@@ -180,7 +182,7 @@ def generate_pdf_from_curriculum(curriculum: dict) -> bytes:
                         Paragraph(f"<b>🎯 Skills:</b> {skills_str}", meta_style)
                     )
 
-                # Topics (✨ NEW STRUCTURED HANDLING)
+                # Topics (✨ NEW STRUCTURED HANDLING WITH VIDEO LINKS)
                 if course.get("topics"):
                     elements.append(Paragraph("<b>📚 Topics:</b>", meta_style))
 
@@ -196,6 +198,12 @@ def generate_pdf_from_curriculum(curriculum: dict) -> bytes:
                                 line += f" — {safe(topic['weeks'])}"
 
                             elements.append(Paragraph(line, body_style))
+                            
+                            # Add video link if available
+                            if topic.get("video_url") and topic["video_url"] != "#":
+                                elements.append(
+                                    Paragraph(f"<font color='#0066CC'><u>▶ Watch Video</u></font>", meta_style)
+                                )
                         else:
                             elements.append(Paragraph(f"• {safe(str(topic))}", body_style))
 
@@ -258,6 +266,12 @@ def generate_pdf_from_curriculum(curriculum: dict) -> bytes:
                             if topic.get("estimated_hours"):
                                 line += f" ({safe(topic['estimated_hours'])} hrs)"
                             elements.append(Paragraph(line, body_style))
+                            
+                            # Add video link if available
+                            if topic.get("video_url") and topic["video_url"] != "#":
+                                elements.append(
+                                    Paragraph(f"<font color='#0066CC'><u>▶ Watch Video</u></font>", meta_style)
+                                )
                         else:
                             elements.append(Paragraph(f"• {safe(str(topic))}", body_style))
 

@@ -1,3 +1,11 @@
+import sys
+import os
+
+# Ensure project root is on sys.path when running from the `api/` folder
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -7,10 +15,13 @@ from agents import refine_agent
 from agents.validator_agent import validator_agent
 from agents.formatter_agent import formatter_agent
 from services.pdf_generator import generate_pdf_from_curriculum
+from services.logger import get_logger
 from fastapi import HTTPException
 from io import BytesIO
 
 app = FastAPI()
+
+logger = get_logger("api")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
@@ -25,18 +36,16 @@ def home(request: Request):
 async def generate_curriculum(data: dict):
     result = await run_agent_pipeline(data)
     
-    print("\n" + "="*60)
-    print("GENERATE ENDPOINT RESPONSE")
-    print("="*60)
-    print(f"Response keys: {list(result.keys())}")
+    logger.info("GENERATE ENDPOINT RESPONSE")
+    logger.debug("Response keys: %s", list(result.keys()))
     if "semesters" in result and result["semesters"]:
         first_sem = result["semesters"][0]
         if "courses" in first_sem and first_sem["courses"]:
             first_course = first_sem["courses"][0]
-            print(f"First course: {first_course}")
-    print("="*60 + "\n")
+            logger.debug("First course: %s", first_course)
     
     return result
+
 
 
 @app.post("/refine-plan")
@@ -63,6 +72,7 @@ async def refine_plan(data: dict):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
 @app.post("/export-pdf")
 async def export_pdf(data: dict):
     """
@@ -75,35 +85,28 @@ async def export_pdf(data: dict):
         raise HTTPException(status_code=400, detail="'curriculum' field is required")
     
     try:
-        print("\n" + "="*60)
-        print("EXPORT PDF REQUEST")
-        print("="*60)
-        print(f"Curriculum keys: {list(curriculum.keys())}")
-        print(f"Has semesters: {'semesters' in curriculum}")
-        
+        logger.info("EXPORT PDF REQUEST")
+        logger.debug("Curriculum keys: %s", list(curriculum.keys()))
+        logger.debug("Has semesters: %s", 'semesters' in curriculum)
+
         # 1) Validate the curriculum
         validation = await validator_agent(curriculum)
-        print(f"✓ Validation passed")
-        
+        logger.debug("Validation result: %s", validation)
+
         # 2) Format the curriculum with validation metadata
         formatted_curriculum = await formatter_agent(curriculum, validation)
-        print(f"✓ Formatting complete")
-        print(f"Formatted curriculum keys: {list(formatted_curriculum.keys())}")
-        
+        logger.debug("Formatting complete. Keys: %s", list(formatted_curriculum.keys()))
+
         # 3) Generate PDF from formatted curriculum
-        print(f"Generating PDF...")
+        logger.info("Generating PDF")
         pdf_bytes = generate_pdf_from_curriculum(formatted_curriculum)
-        print(f"✓ PDF generated successfully ({len(pdf_bytes)} bytes)")
-        print("="*60 + "\n")
-        
+        logger.info("PDF generated successfully (%d bytes)", len(pdf_bytes))
+
         return StreamingResponse(
             BytesIO(pdf_bytes),
             media_type="application/pdf",
             headers={"Content-Disposition": "attachment; filename=curriculum.pdf"}
         )
     except Exception as e:
-        print(f"❌ PDF generation error: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        print("="*60 + "\n")
+        logger.exception("PDF generation failed: %s", str(e))
         raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")

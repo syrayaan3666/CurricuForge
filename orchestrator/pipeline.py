@@ -3,6 +3,9 @@ from agents.planner_agent import planner_agent
 from agents.generator_agent import generator_agent
 from agents.validator_agent import validator_agent
 from agents.formatter_agent import formatter_agent
+from services.logger import get_logger
+
+logger = get_logger("pipeline")
 
 
 
@@ -44,21 +47,18 @@ async def run_agent_pipeline(data: dict):
     final_output = await formatter_agent(curriculum, validation)
 
     # DEBUG: Log what's being returned to frontend
-    print("\n" + "="*60)
-    print("PIPELINE FINAL OUTPUT DEBUG")
-    print("="*60)
+    logger.info("PIPELINE FINAL OUTPUT")
     if "semesters" in final_output:
-        print(f"Has semesters: {len(final_output['semesters'])}")
+        logger.debug("Has semesters: %d", len(final_output["semesters"]))
         if final_output["semesters"]:
             first_sem = final_output["semesters"][0]
-            print(f"First semester has {len(first_sem.get('courses', []))} courses")
+            logger.debug("First semester has %d courses", len(first_sem.get('courses', [])))
             if "courses" in first_sem and first_sem["courses"]:
                 first_course = first_sem["courses"][0]
-                print(f"First course keys: {list(first_course.keys())}")
-                print(f"First course has skills: {'skills' in first_course}")
-                print(f"First course has topics: {'topics' in first_course}")
-                print(f"First course has outcome_project: {'outcome_project' in first_course}")
-                print(f"First course sample: {first_course}")
-    print("="*60 + "\n")
+                logger.debug("First course keys: %s", list(first_course.keys()))
+                logger.debug("First course has skills: %s", 'skills' in first_course)
+                logger.debug("First course has topics: %s", 'topics' in first_course)
+                logger.debug("First course has outcome_project: %s", 'outcome_project' in first_course)
+                logger.debug("First course sample: %s", first_course)
 
     return final_output

@@ -54,7 +54,12 @@ Return ONLY valid JSON.
           "title": "",
           "difficulty": "Beginner",
           "skills": [],
-          "topics": [],
+          "topics": [
+            {
+              "name": "",
+              "video_url": ""
+            }
+          ],
           "outcome_project": ""
         }
       ]
@@ -216,7 +221,8 @@ Return ONLY valid JSON.
             {
               "name": "",
               "estimated_hours": 6,
-              "weeks": "Week 1-2"
+              "weeks": "Week 1-2",
+              "video_url": ""
             }
           ],
           "certification": {
@@ -270,11 +276,15 @@ async def generator_agent(plan: dict):
     # Choose correct system prompt
     # -------------------------------------------------
     if planner_type == "personal":
-        system_prompt = PERSONAL_GENERATOR_PROMPT
-        print("🧠 Generator Mode: PERSONAL PLANNER")
+      system_prompt = PERSONAL_GENERATOR_PROMPT
+      from services.logger import get_logger
+      logger = get_logger("generator_agent")
+      logger.info("Generator Mode: PERSONAL PLANNER")
     else:
-        system_prompt = SEMESTER_GENERATOR_PROMPT
-        print("🎓 Generator Mode: SEMESTER PLANNER")
+      system_prompt = SEMESTER_GENERATOR_PROMPT
+      from services.logger import get_logger
+      logger = get_logger("generator_agent")
+      logger.info("Generator Mode: SEMESTER PLANNER")
 
     # -------------------------------------------------
     # Call LLM

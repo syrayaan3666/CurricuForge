@@ -7,6 +7,9 @@ from google import genai
 
 load_dotenv()
 
+from services.logger import get_logger
+logger = get_logger("llm_client")
+
 # ================= CONFIG =================
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -182,7 +185,7 @@ No markdown.
     # =================================================
     if not gemini_quota_exhausted:
         try:
-            print("🤖 Using Gemini provider")
+            logger.info("Using Gemini provider: Gemini")
 
             response = gemini_client.models.generate_content(
                 model="gemini-2.5-flash-lite",
@@ -193,20 +196,20 @@ No markdown.
             )
 
             text = response.text
-            print("LLM raw preview (Gemini):", (text or '')[:2000])
+            logger.debug("LLM raw preview (Gemini): %s", (text or '')[:2000])
             cleaned = extract_json(text)
-            print("Extracted JSON preview (Gemini):", (cleaned or '')[:2000])
+            logger.debug("Extracted JSON preview (Gemini): %s", (cleaned or '')[:2000])
             
             # Check for truncation
             if detect_truncation(cleaned):
-                print("⚠️ WARNING: Gemini output appears truncated (may be incomplete)")
+                logger.warning("Gemini output appears truncated (may be incomplete)")
 
-            try:
-                parsed = json.loads(cleaned)
-                print("✅ Gemini success")
-                return parsed
-            except json.JSONDecodeError as e:
-                print("⚠ Gemini returned malformed JSON:", e)
+                try:
+                    parsed = json.loads(cleaned)
+                    logger.info("Gemini success")
+                    return parsed
+                except json.JSONDecodeError as e:
+                    logger.warning("Gemini returned malformed JSON: %s", e)
                 # One-time repair attempt: ask the model to correct its previous output
                 repair_prompt = system_prompt + "\n" + user_prompt + "\n\nYour previous reply was not valid JSON. Here is the exact text you returned:\n" + (text or '') + "\n\nPlease return ONLY the corrected JSON object matching the expected format. No explanations."
 
@@ -219,39 +222,38 @@ No markdown.
                         }],
                     )
                     text2 = repair_resp.text
-                    print("LLM raw preview (Gemini retry):", (text2 or '')[:2000])
+                    logger.debug("LLM raw preview (Gemini retry): %s", (text2 or '')[:2000])
                     cleaned2 = extract_json(text2)
-                    print("Extracted JSON preview (Gemini retry):", (cleaned2 or '')[:2000])
+                    logger.debug("Extracted JSON preview (Gemini retry): %s", (cleaned2 or '')[:2000])
                     
                     # Check for truncation in retry
                     if detect_truncation(cleaned2):
-                        print("⚠️ WARNING: Gemini retry output also appears truncated")
+                        logger.warning("Gemini retry output also appears truncated")
                     
                     parsed2 = json.loads(cleaned2)
-                    print("✅ Gemini repair success")
+                    logger.info("Gemini repair success")
                     return parsed2
                 except Exception:
-                    print("❌ Gemini repair failed; falling back to Groq")
+                    logger.warning("Gemini repair failed; falling back to Groq")
                     # fall through to Groq fallback
                     pass
 
         except Exception as e:
-
             error_text = str(e)
-            print("⚠ Gemini failed:", error_text)
+            logger.error("Gemini failed: %s", error_text)
 
             # If quota exhausted → mark circuit breaker and go to Groq
             if "RESOURCE_EXHAUSTED" in error_text:
-                print("⏳ Gemini quota hit — switching to Groq-only mode...")
+                logger.warning("Gemini quota hit — switching to Groq-only mode...")
                 gemini_quota_exhausted = True
     else:
-        print("⏩ Gemini quota exhausted — skipping to Groq")
+        logger.info("Gemini quota exhausted — skipping to Groq")
 
     # =================================================
     # 2️⃣ FALLBACK → GROQ PROVIDER
     # =================================================
     try:
-        print("🧠 Using Groq")
+        logger.info("Using Groq provider")
 
         headers = {
             "Authorization": f"Bearer {GROQ_API_KEY}",
@@ -273,7 +275,7 @@ No markdown.
         response = requests.post(GROQ_URL, headers=headers, json=groq_payload)
 
         if response.status_code != 200:
-            print("⚠ Groq Raw Response:", response.text)
+            logger.warning("Groq Raw Response: %s", response.text)
             raise Exception(f"Groq HTTP Error: {response.status_code}")
 
         result = response.json()
@@ -290,20 +292,20 @@ No markdown.
         else:
             raise Exception("Invalid Groq response format")
 
-        print("LLM raw preview (Groq):", (text or '')[:2000])
+        logger.debug("LLM raw preview (Groq): %s", (text or '')[:2000])
         cleaned = extract_json(text)
-        print("Extracted JSON preview (Groq):", (cleaned or '')[:2000])
+        logger.debug("Extracted JSON preview (Groq): %s", (cleaned or '')[:2000])
         
         # Check for truncation
         if detect_truncation(cleaned):
-            print("⚠️ WARNING: Groq output appears truncated (may be incomplete)")
+            logger.warning("Groq output appears truncated (may be incomplete)")
 
         try:
             parsed = json.loads(cleaned)
-            print("✅ Groq success")
+            logger.info("Groq success")
             return parsed
         except json.JSONDecodeError as e:
-            print("⚠ Groq returned malformed JSON:", e)
+            logger.warning("Groq returned malformed JSON: %s", e)
             # One-time repair attempt via Groq
             repair_payload = groq_payload.copy()
             repair_payload["messages"] = [
@@ -315,20 +317,21 @@ No markdown.
                 if repair_resp.status_code == 200:
                     repair_result = repair_resp.json()
                     text2 = repair_result.get("choices", [])[0].get("message", {}).get("content", "")
-                    print("LLM raw preview (Groq retry):", (text2 or '')[:2000])
+                    logger.debug("LLM raw preview (Groq retry): %s", (text2 or '')[:2000])
                     cleaned2 = extract_json(text2)
-                    print("Extracted JSON preview (Groq retry):", (cleaned2 or '')[:2000])
+                    logger.debug("Extracted JSON preview (Groq retry): %s", (cleaned2 or '')[:2000])
                     
                     # Check for truncation in retry
                     if detect_truncation(cleaned2):
-                        print("⚠️ WARNING: Groq retry output also appears truncated")
+                        logger.warning("Groq retry output also appears truncated")
                     
                     parsed2 = json.loads(cleaned2)
-                    print("✅ Groq repair success")
+                    logger.info("Groq repair success")
                     return parsed2
             except Exception:
-                print("❌ Groq repair failed")
+                logger.error("Groq repair failed")
                 raise
 
     except Exception as e:
+        logger.exception("All LLM providers failed: %s", repr(e))
         raise Exception(f"All LLM providers failed → {repr(e)}")

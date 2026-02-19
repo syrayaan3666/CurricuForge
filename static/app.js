@@ -212,7 +212,16 @@ function renderCurriculum(data){
                     html += `<p style="margin:8px 0 4px 0;"><strong>📚 Topics:</strong></p>`;
                     html += `<ul style="margin:0 0 8px 0;">`;
                     course.topics.forEach(t=>{
-                        html += `<li>${t}</li>`;
+                        if(typeof t === 'string'){
+                            html += `<li>${t}</li>`;
+                        } else {
+                            html += `<li>`;
+                            html += `${t.name || t}`;
+                            if(t.video_url && t.video_url !== '#'){
+                                html += ` <a href="${t.video_url}" target="_blank" style="color:#0066CC;text-decoration:none;" title="Watch video">▶ Learn</a>`;
+                            }
+                            html += `</li>`;
+                        }
                     });
                     html += `</ul>`;
                 }
@@ -335,6 +344,9 @@ function renderPersonalRoadmap(data){
                         html += `${topic.name}`;
                         if(topic.estimated_hours) html += ` <span class="topic-hours">(${topic.estimated_hours}h)</span>`;
                         if(topic.weeks) html += ` <span class="topic-weeks">${topic.weeks}</span>`;
+                        if(topic.video_url && topic.video_url !== '#'){
+                            html += ` <a href="${topic.video_url}" target="_blank" style="color:#0066CC;text-decoration:none;margin-left:8px;" title="Watch video">▶ Learn</a>`;
+                        }
                         html += `</li>`;
                     }
                 });
