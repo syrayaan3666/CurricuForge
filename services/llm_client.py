@@ -196,6 +196,13 @@ No markdown.
 
     global gemini_quota_exhausted
 
+    # Fast-fail with a clear message when no provider is configured.
+    gemini_configured = bool(GEMINI_API_KEY and gemini_client is not None and not gemini_quota_exhausted)
+    groq_configured = bool(GROQ_API_KEY)
+
+    if not gemini_configured and not groq_configured:
+        raise Exception("No LLM provider is configured. Set GEMINI_API_KEY or GROQ_API_KEY in environment variables.")
+
     # =================================================
     # 1️⃣ TRY GEMINI FIRST — SKIP IF QUOTA EXHAUSTED
     # =================================================
@@ -288,7 +295,7 @@ No markdown.
             "max_tokens": 8000
         }
 
-        response = requests.post(GROQ_URL, headers=headers, json=groq_payload)
+        response = requests.post(GROQ_URL, headers=headers, json=groq_payload, timeout=60)
 
         if response.status_code != 200:
             logger.warning("Groq Raw Response: %s", response.text)
@@ -329,7 +336,7 @@ No markdown.
             ]
 
             try:
-                repair_resp = requests.post(GROQ_URL, headers=headers, json=repair_payload)
+                repair_resp = requests.post(GROQ_URL, headers=headers, json=repair_payload, timeout=60)
                 if repair_resp.status_code == 200:
                     repair_result = repair_resp.json()
                     text2 = repair_result.get("choices", [])[0].get("message", {}).get("content", "")

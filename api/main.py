@@ -63,7 +63,7 @@ async def generate_curriculum(data: dict):
         raise
     except Exception as e:
         logger.exception("Generate failed: %s", str(e))
-        raise HTTPException(status_code=500, detail="Failed to generate curriculum")
+        raise HTTPException(status_code=500, detail=f"Failed to generate curriculum: {str(e)}")
 
 
 

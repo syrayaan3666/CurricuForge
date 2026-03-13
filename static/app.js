@@ -149,7 +149,7 @@ async function generate(){
     }catch(e){
         console.error(e);
         resultBox.innerHTML =
-            `<div class="semester-card">Error generating curriculum</div>`;
+            `<div class="semester-card">Error generating curriculum: ${e.message || "Unknown error"}</div>`;
     }
 }
 
@@ -193,6 +193,14 @@ function renderCurriculum(data){
     }
     
     console.log("=== END DEBUG ===\n");
+
+    // If backend returned a structured error payload, show it directly.
+    if(data && (data.detail || data.error || data.message)){
+        const msg = data.detail || data.error || data.message;
+        document.getElementById("result").innerHTML = `<div class="semester-card">⚠ ${msg}</div>`;
+        return;
+    }
+
     // =====================================================
     // � PERSONAL ROADMAP MODE (NEW)
     // =====================================================
