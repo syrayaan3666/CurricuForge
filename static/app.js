@@ -5,6 +5,46 @@ function sleep(ms){
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+async function readErrorMessage(res){
+    const contentType = (res.headers.get("content-type") || "").toLowerCase();
+
+    if(contentType.includes("application/json")){
+        try{
+            const payload = await res.json();
+            if(typeof payload === "string") return payload;
+            return payload.detail || payload.error || payload.message || JSON.stringify(payload);
+        }catch(_){
+            // Fall through to text parsing
+        }
+    }
+
+    try{
+        const raw = await res.text();
+        if(raw && raw.trim()) return raw.trim();
+    }catch(_){
+        // Ignore body parsing errors
+    }
+
+    return `Request failed with status ${res.status}`;
+}
+
+async function safeFetchJson(url, options){
+    const res = await fetch(url, options);
+    const contentType = (res.headers.get("content-type") || "").toLowerCase();
+
+    if(!res.ok){
+        const message = await readErrorMessage(res);
+        throw new Error(message);
+    }
+
+    if(contentType.includes("application/json")){
+        return await res.json();
+    }
+
+    const raw = await res.text();
+    throw new Error(`Expected JSON response but received: ${(raw || "").slice(0, 120)}`);
+}
+
 // ===============================
 // GENERATE FUNCTION
 // ===============================
@@ -84,15 +124,13 @@ async function generate(){
 
     try{
 
-        const res = await fetch("/generate",{
+        const data = await safeFetchJson("/generate",{
             method:"POST",
             headers:{
                 "Content-Type":"application/json"
             },
             body:JSON.stringify(payload)
         });
-
-        const data = await res.json();
 
         generator.classList.remove("agent-active");
         generator.classList.add("agent-done");
@@ -376,7 +414,7 @@ function downloadJSON(data){
     a.click();
 }
 
-function downloadPDF(data, event) {
+async function downloadPDF(data, event) {
     // data is passed directly from button click — guaranteed to be the exact rendered data
     console.log("=== DOWNLOAD PDF (Direct Data Pass) ===");
     console.log("Received data object:", data);
@@ -405,21 +443,22 @@ function downloadPDF(data, event) {
     const payloadToSend = { curriculum: data };
     console.log("Sending to /export-pdf:", payloadToSend);
     
-    // POST to backend PDF generator
-    fetch("/export-pdf", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payloadToSend)
-    })
-    .then(response => {
+    try {
+        const response = await fetch("/export-pdf", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payloadToSend)
+        });
+
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const message = await readErrorMessage(response);
+            throw new Error(message);
         }
-        return response.blob();
-    })
-    .then(blob => {
+
+        const blob = await response.blob();
+
         // Create a download link and trigger download
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -431,17 +470,14 @@ function downloadPDF(data, event) {
         window.URL.revokeObjectURL(url);
         
         console.log("PDF downloaded successfully");
-        
-        // Restore button
-        if(btn){ btn.textContent = originalText; btn.disabled = false; }
-    })
-    .catch(error => {
+
+    } catch (error) {
         console.error("PDF download error:", error);
         alert("Error generating PDF: " + error.message);
-        
+    } finally {
         // Restore button
         if(btn){ btn.textContent = originalText; btn.disabled = false; }
-    });
+    }
 }
 
 function createDownloadBar(data){
@@ -501,18 +537,11 @@ async function refinePlan(){
         btn.disabled = true;
         btn.textContent = "Refining...";
 
-        const res = await fetch('/refine-plan',{
+        const newData = await safeFetchJson('/refine-plan',{
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ instruction: instruction, current_plan: window.currentCurriculumData })
         });
-
-        if(!res.ok){
-            const err = await res.text();
-            throw new Error(err || 'Refinement failed');
-        }
-
-        const newData = await res.json();
 
         // Replace current plan and re-render
         window.currentCurriculumData = newData;

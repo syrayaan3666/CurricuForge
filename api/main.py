@@ -7,7 +7,7 @@ if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from orchestrator.pipeline import run_agent_pipeline
@@ -28,6 +28,18 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled error on %s %s: %s", request.method, request.url.path, str(exc))
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "Internal server error",
+            "error": "INTERNAL_SERVER_ERROR"
+        }
+    )
+
+
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
@@ -35,17 +47,23 @@ def home(request: Request):
 
 @app.post("/generate")
 async def generate_curriculum(data: dict):
-    result = await run_agent_pipeline(data)
-    
-    logger.info("GENERATE ENDPOINT RESPONSE")
-    logger.debug("Response keys: %s", list(result.keys()))
-    if "semesters" in result and result["semesters"]:
-        first_sem = result["semesters"][0]
-        if "courses" in first_sem and first_sem["courses"]:
-            first_course = first_sem["courses"][0]
-            logger.debug("First course: %s", first_course)
-    
-    return result
+    try:
+        result = await run_agent_pipeline(data)
+
+        logger.info("GENERATE ENDPOINT RESPONSE")
+        logger.debug("Response keys: %s", list(result.keys()))
+        if "semesters" in result and result["semesters"]:
+            first_sem = result["semesters"][0]
+            if "courses" in first_sem and first_sem["courses"]:
+                first_course = first_sem["courses"][0]
+                logger.debug("First course: %s", first_course)
+
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Generate failed: %s", str(e))
+        raise HTTPException(status_code=500, detail="Failed to generate curriculum")
 
 
 
