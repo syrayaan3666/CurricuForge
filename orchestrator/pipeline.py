@@ -8,14 +8,12 @@ from services.logger import get_logger
 logger = get_logger("pipeline")
 
 
-
-async def run_agent_pipeline(data: dict):
-
+async def _generate_raw_curriculum(data: dict):
     planner_type = data.get("planner_type", "semester")
+    logger.info("Planner type detected: %s", planner_type)
 
     # ================= PERSONAL PLANNER =================
     if planner_type == "personal":
-
         learner_profile = await personal_planner_agent(data)
 
         # Pass original data fields to generator along with planner_type
@@ -27,23 +25,32 @@ async def run_agent_pipeline(data: dict):
             "pace": data.get("pace"),
             "weekly_hours": data.get("weekly_hours"),
             "duration": data.get("duration"),
-            "learner_profile": learner_profile
+            "learner_profile": learner_profile,
         }
-        
+
         curriculum = await generator_agent(generator_input)
 
     # ================= SEMESTER PLANNER =================
     else:
-
         plan = await planner_agent(data)
         plan["planner_type"] = "semester"
 
         curriculum = await generator_agent(plan)
 
+    return curriculum
+
+
+async def run_agent_pipeline_raw(data: dict):
+    return await _generate_raw_curriculum(data)
+
+
+async def run_agent_pipeline(data: dict):
+    curriculum = await _generate_raw_curriculum(data)
+
     # ================= VALIDATION =================
     validation = await validator_agent(curriculum)
 
-    # ✅ CORRECT CALL — TWO ARGUMENTS
+        # CORRECT CALL - TWO ARGUMENTS
     final_output = await formatter_agent(curriculum, validation)
 
     # DEBUG: Log what's being returned to frontend
@@ -52,13 +59,13 @@ async def run_agent_pipeline(data: dict):
         logger.debug("Has semesters: %d", len(final_output["semesters"]))
         if final_output["semesters"]:
             first_sem = final_output["semesters"][0]
-            logger.debug("First semester has %d courses", len(first_sem.get('courses', [])))
+            logger.debug("First semester has %d courses", len(first_sem.get("courses", [])))
             if "courses" in first_sem and first_sem["courses"]:
                 first_course = first_sem["courses"][0]
                 logger.debug("First course keys: %s", list(first_course.keys()))
-                logger.debug("First course has skills: %s", 'skills' in first_course)
-                logger.debug("First course has topics: %s", 'topics' in first_course)
-                logger.debug("First course has outcome_project: %s", 'outcome_project' in first_course)
+                logger.debug("First course has skills: %s", "skills" in first_course)
+                logger.debug("First course has topics: %s", "topics" in first_course)
+                logger.debug("First course has outcome_project: %s", "outcome_project" in first_course)
                 logger.debug("First course sample: %s", first_course)
 
     return final_output
