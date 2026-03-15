@@ -4,6 +4,8 @@ import requests
 import asyncio
 from dotenv import load_dotenv
 
+load_dotenv()
+
 # Attempt to import the Google Generative AI client. If it's not
 # available, set `genai` to None so the code falls back to the Groq
 # provider instead of crashing at import time.
@@ -16,8 +18,6 @@ except Exception:
     except Exception:
         genai = None
 
-load_dotenv()
-
 from services.logger import get_logger
 logger = get_logger("llm_client")
 
@@ -28,13 +28,17 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
-# Gemini client
+# Gemini client - wrapped in try-catch to prevent import failures
 gemini_client = None
-if genai is not None:
+if genai is not None and GEMINI_API_KEY:
     try:
         gemini_client = genai.Client(api_key=GEMINI_API_KEY)
-    except Exception:
+        logger.info("Gemini client initialized successfully")
+    except Exception as e:
+        logger.warning("Failed to initialize Gemini client: %s", str(e))
         gemini_client = None
+else:
+    logger.info("Gemini client not available (missing API key or genai module)")
 
 # ================= CIRCUIT BREAKER (Quota Fallback) =================
 # Once Gemini quota fails, skip Gemini for all subsequent requests
