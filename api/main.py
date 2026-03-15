@@ -10,7 +10,8 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from orchestrator.pipeline import run_agent_pipeline
+from fastapi.middleware.cors import CORSMiddleware
+from orchestrator.pipeline import run_agent_pipeline, run_agent_pipeline_raw
 from agents import refine_agent
 from agents.validator_agent import validator_agent
 from agents.formatter_agent import formatter_agent
@@ -24,8 +25,33 @@ app = FastAPI()
 
 logger = get_logger("api")
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+# Add CORS middleware to allow external requests
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # For production, specify allowed domains
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Safely mount static files and templates (skip if directories don't exist)
+static_dir = os.path.join(ROOT_DIR, "static")
+templates_dir = os.path.join(ROOT_DIR, "templates")
+
+if os.path.exists(static_dir):
+    try:
+        app.mount("/static", StaticFiles(directory=static_dir), name="static")
+    except Exception as e:
+        logger.warning("Could not mount static files: %s", str(e))
+
+if os.path.exists(templates_dir):
+    try:
+        templates = Jinja2Templates(directory=templates_dir)
+    except Exception as e:
+        logger.warning("Could not initialize templates: %s", str(e))
+        templates = None
+else:
+    templates = None
 
 
 @app.exception_handler(Exception)
@@ -42,7 +68,13 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    if templates is None:
+        return "<h1>CurricuForge API</h1><p>Use POST endpoints: /generate, /generate-raw, /generate-debug</p>"
+    try:
+        return templates.TemplateResponse("index.html", {"request": request})
+    except Exception as e:
+        logger.warning("Could not render template: %s", str(e))
+        return "<h1>CurricuForge API</h1><p>Use POST endpoints: /generate, /generate-raw, /generate-debug</p>"
 
 
 @app.post("/generate")
@@ -64,6 +96,40 @@ async def generate_curriculum(data: dict):
     except Exception as e:
         logger.exception("Generate failed: %s", str(e))
         raise HTTPException(status_code=500, detail=f"Failed to generate curriculum: {str(e)}")
+
+
+@app.post("/generate-raw")
+async def generate_curriculum_raw(data: dict):
+    try:
+        logger.info("/generate-raw called")
+        return await run_agent_pipeline_raw(data)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Generate raw failed: %s", str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to generate raw curriculum: {str(e)}")
+
+
+@app.post("/generate-debug")
+async def generate_curriculum_debug(data: dict):
+    try:
+        logger.info("/generate-debug called")
+        planner_type = data.get("planner_type", "semester")
+        raw_curriculum = await run_agent_pipeline_raw(data)
+        validation = await validator_agent(raw_curriculum)
+        formatted_curriculum = await formatter_agent(raw_curriculum, validation)
+
+        return {
+            "planner_type": planner_type,
+            "raw_curriculum": raw_curriculum,
+            "validation": validation,
+            "formatted_curriculum": formatted_curriculum,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Generate debug failed: %s", str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to generate debug curriculum: {str(e)}")
 
 
 
@@ -129,3 +195,9 @@ async def export_pdf(data: dict):
     except Exception as e:
         logger.exception("PDF generation failed: %s", str(e))
         raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
+
+
+# Export app for Vercel ASGI handler
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
